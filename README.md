@@ -1,4 +1,4 @@
-# 🌡️ Sistema IoT LoRaWAN Multisensor - Bajo Consumo
+# � Boya V2 - Sistema de Monitoreo Marítimo LoRaWAN
 
 > ### 🎓 Proyecto Académico - Sin Ánimo de Lucro
 > Este proyecto ha sido desarrollado para apoyar a los investigadores y prototipos del Medialab de la Universidad de Oviedo.  
@@ -15,7 +15,7 @@
 
 ---
 
-**Nodo sensor ambiental inteligente para ESP32 LilyGo T3 v1.6.1 con LoRaWAN**
+**Boya marítima autónoma para monitoreo ambiental con ESP32 LilyGo T3 v1.6.1 y LoRaWAN**
 
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-3776AB?logo=platformio)](https://platformio.org/)
 [![ESP32](https://img.shields.io/badge/ESP32-000000?logo=espressif)](https://www.espressif.com/)
@@ -26,20 +26,58 @@
 
 ## 🎯 ¿Qué es este proyecto?
 
-Un **sistema IoT completo y modular** que combina:
-- **ESP32 LilyGo T3 v1.6.1** con ultra bajo consumo
-- **LoRaWAN** para comunicación de largo alcance
-- **Múltiples sensores ambientales** configurables (DHT22, BMP280, etc.)
-- **Gestión avanzada de energía** con batería y carga solar
+Una **boya marítima autónoma** diseñada para monitoreo ambiental en entornos acuáticos que combina:
+- **ESP32 LilyGo T3 v1.6.1** con gestión inteligente de energía
+- **LoRaWAN** para comunicación de largo alcance desde el mar
+- **Sensores ambientales marítimos** para monitoreo de calidad del agua
+- **Gestión de energía solar** para operación continua
 - **Integración completa** con The Things Network (TTN)
 
 ### ✨ Características principales
-- 🔋 **Ultra bajo consumo**: Hasta 136 días de autonomía con batería 3000mAh
-- 🔧 **Completamente modular**: Habilita/deshabilita sensores individualmente
-- 📡 **LoRaWAN nativo**: Integración directa con TTN usando OTAA
-- ☀️ **Carga solar**: Energía renovable integrada con panel solar
-- 📊 **Payload dinámico**: Se adapta automáticamente según sensores activos
-- 🖥️ **Display OLED**: Interfaz visual con feedback contextual
+- 🌊 **Monitoreo marítimo**: pH, temperatura del agua y condiciones atmosféricas
+- 🔧 **Arquitectura modular**: Sistema flexible para diferentes configuraciones de sensores
+- 📡 **LoRaWAN OTAA**: Comunicación segura de largo alcance con autenticación
+- ☀️ **Energía solar**: Operación autónoma con batería y panel solar
+- 📊 **Payload optimizado**: 12 bytes de datos comprimidos eficientemente
+- 🖥️ **Display OLED**: Interfaz visual con información del sistema
+
+---
+
+## 🌊 Sensores Integrados
+
+### 📊 Sistema de Monitoreo Completo
+
+#### 🌡️ **BME280 - Sensor Ambiental (I2C)**
+- **Temperatura exterior**: Monitoreo atmosférico (-40°C a +85°C)
+- **Humedad relativa**: Medición precisa (0-100%)
+- **Presión atmosférica**: Registro barométrico (300-1100 hPa)
+- **Precisión**: ±1°C, ±3% HR, ±1 hPa
+- **Función adicional**: Compensación de temperatura para calibración de pH
+
+#### 🌊 **DS18B20 - Temperatura del Agua (OneWire)**
+- **Temperatura a 1m de profundidad**: Monitoreo térmico del agua
+- **Rango**: -55°C a +125°C
+- **Precisión**: ±0.5°C
+- **Interfaz**: OneWire digital
+- **Encapsulado**: Sensor sumergible waterproof
+
+#### 🧪 **DFRobot pH - Sensor de pH del Agua (Analógico)**
+- **Medición de pH**: Acidez/alcalinidad del agua (0-14 pH)
+- **Compensación automática**: Utiliza temperatura del BME280
+- **Calibración**: Sistema de 2 puntos (pH 4.0 y pH 7.0)
+- **Interfaz**: ADC analógico GPIO25
+- **Almacenamiento**: Calibración guardada en EEPROM
+
+### 📦 Estructura del Payload (12 bytes)
+
+```cpp
+Byte 0-1:  Batería (%)        - Estado de carga del sistema
+Byte 2-3:  pH (x100)           - Acidez del agua
+Byte 4-5:  Temp exterior (x100) - Temperatura atmosférica BME280
+Byte 6-7:  Temp 1m agua (x100) - Temperatura del agua DS18B20
+Byte 8-9:  Humedad (x100)      - Humedad relativa BME280
+Byte 10-11: Presión (x10)      - Presión atmosférica BME280
+```
 
 ---
 
@@ -48,32 +86,33 @@ Un **sistema IoT completo y modular** que combina:
 ### 1. **Instala el entorno**
 ```bash
 # Clona el proyecto
-git clone <tu-repo>
-cd low-power-project
+git clone https://github.com/MediaLabUniovi/Boya-V2.git
+cd "boya v2"
 
 # Abre en VS Code con PlatformIO
 code .
 ```
 
-### 2. **Configura tus sensores** (`config/config.h`)
+### 2. **Configuración de sensores** (`config/config.h`)
+Los tres sensores están habilitados por defecto:
 ```cpp
-// DESCOMENTA los sensores que quieres usar
-#define ENABLE_SENSOR_DHT22      // Temperatura + Humedad
-#define ENABLE_SENSOR_BMP280     // Presión atmosférica
-//#define ENABLE_SENSOR_DS18B20    // Temperatura adicional
-//#define ENABLE_SENSOR_HCSR04     // Sensor de distancia
+#define ENABLE_SENSOR_BME280    // Temp, humedad, presión
+#define ENABLE_SENSOR_DS18B20   // Temperatura agua 1m
+#define ENABLE_SENSOR_PH        // pH del agua
 ```
 
-### 3. **Configura credenciales LoRaWAN** (`lorawan_config.h`)
+### 3. **Configura credenciales LoRaWAN** (`config/lorawan_config.h`)
 ```cpp
-static const u1_t PROGMEM APPEUI[8] = {/* tus valores de TTN */};
-static const u1_t PROGMEM DEVEUI[8] = {/* tus valores de TTN */};
-static const u1_t PROGMEM APPKEY[16] = {/* tus valores de TTN */};
+// Selecciona tu ID de sensor (1-5)
+#define SENSOR_ID 1
+
+// Las credenciales se cargan automáticamente según SENSOR_ID
+// Edita los arrays APPEUI, DEVEUI, APPKEY correspondientes
 ```
 
 ### 4. **Compila y sube**
 ```bash
-pio run --target upload --upload-port COM3
+pio run --target upload
 ```
 
 ### 5. **¡Listo!** Ve tus datos en TTN Console
@@ -92,151 +131,163 @@ pio run --target upload --upload-port COM3
 
 ---
 
-### 📊 Configuraciones de Ejemplo
+### � Configuración de Sensores
 
-### 🌡️ **Monitoreo Ambiental Básico**
+#### 🌊 **Configuración de Boya Marítima (Actual)**
 ```cpp
-#define ENABLE_SENSOR_DHT22      // Temperatura + Humedad
-#define SEND_INTERVAL_SECONDS 300 // Cada 5 minutos
+#define ENABLE_SENSOR_BME280     // Temperatura exterior, humedad, presión
+#define ENABLE_SENSOR_DS18B20    // Temperatura agua a 1m
+#define ENABLE_SENSOR_PH         // pH del agua
 ```
-**Autonomía**: ~70 días | **Payload**: 7 bytes | **Campos**: Temp, Hum, Batt, Solar
+**Payload**: 12 bytes | **Campos**: Batería, pH, Temp_Ext, Temp_1m, Humedad, Presión
 
-### 🏭 **Estación Meteorológica Completa**
-```cpp
-#define ENABLE_SENSOR_DHT22      // Temp + Humedad
-#define ENABLE_SENSOR_BMP280     // Presión atmosférica
-#define SEND_INTERVAL_SECONDS 600 // Cada 10 minutos
-```
-**Autonomía**: ~62 días | **Payload**: 9 bytes | **Campos**: Temp, Hum, Pres, Batt, Solar
-
-### 🔋 **Solo Monitoreo de Batería**
-```cpp
-// Todos los sensores comentados
-#define ENABLE_SENSOR_NONE       // Solo batería y estado solar
-#define SEND_INTERVAL_SECONDS 1800 // Cada 30 minutos
-```
-**Autonomía**: ~136 días | **Payload**: 4 bytes | **Campos**: Batt, Solar
+#### ⚡ Gestión de Energía
+- **Control de sensores por MOSFET**: GPIO13 alimenta sensores DS18B20 y pH
+- **Tiempo de estabilización**: 30 segundos antes de lectura de pH
+- **Compensación de temperatura**: pH calibrado con temperatura del BME280
+- **Panel solar**: Carga automática de batería LiPo 3.7V
 
 ---
 
-## 📡 Decoder TTN Automático
+## 📡 Decoder TTN para Boya V2
 
-El sistema genera automáticamente el decoder JavaScript según tus sensores configurados.
+Decoder JavaScript optimizado para los 12 bytes del payload de la boya marítima.
 
-Para obtener el decoder personalizado:
-1. Habilita `SHOW_TTN_DECODER true` en `config/config.h`
-2. Compila y sube el código
-3. Abre Serial Monitor (115200 baud)
-4. Copia el código JavaScript generado
-5. Pégalo en TTN Console → Payload formatters → Uplink
-
-### 🔧 Decodificador Universal
+### 🔧 Decodificador Boya V2
 
 ```javascript
 function decodeUplink(input) {
   var bytes = input.bytes;
   var data = {};
-  var offset = 0;
-
-  // Determinar qué campos están presentes por el tamaño del payload
-  var payloadSize = bytes.length;
-
-  // Temperatura y humedad (para DHT22, 6 bytes)
-  if (payloadSize >= 6) {
-    data.temperature = ((bytes[offset++] << 8) | bytes[offset++]) / 100.0;
-    data.humidity = ((bytes[offset++] << 8) | bytes[offset++]) / 100.0;
+  
+  // Validar tamaño del payload (12 bytes)
+  if (bytes.length !== 12) {
+    return {
+      data: data,
+      warnings: ['Payload size should be 12 bytes, got ' + bytes.length],
+      errors: []
+    };
   }
-
-  // Presión (para DHT22 + BMP280, 8 bytes)
-  if (payloadSize >= 8) {
-    data.pressure = ((bytes[offset++] << 8) | bytes[offset++]) / 10.0;
-  }
-
-  // Batería (siempre presente, últimos 2 bytes)
-  data.battery_voltage = ((bytes[offset++] << 8) | bytes[offset++]) / 100.0;
-
+  
+  // Byte 0-1: Batería (%)
+  data.battery_percent = bytes[0];
+  
+  // Byte 2-3: pH (x100) - Little-endian
+  var ph_raw = bytes[2] | (bytes[3] << 8);
+  data.ph = ph_raw / 100.0;
+  
+  // Byte 4-5: Temperatura exterior BME280 (x100) - Little-endian
+  var temp_ext_raw = bytes[4] | (bytes[5] << 8);
+  data.temperature_ext = temp_ext_raw / 100.0;
+  
+  // Byte 6-7: Temperatura agua 1m DS18B20 (x100) - Little-endian
+  var temp_water_raw = bytes[6] | (bytes[7] << 8);
+  data.temperature_water_1m = temp_water_raw / 100.0;
+  
+  // Byte 8-9: Humedad BME280 (x100) - Little-endian
+  var humidity_raw = bytes[8] | (bytes[9] << 8);
+  data.humidity = humidity_raw / 100.0;
+  
+  // Byte 10-11: Presión BME280 (x10) - Little-endian
+  var pressure_raw = bytes[10] | (bytes[11] << 8);
+  data.pressure = pressure_raw / 10.0;
+  
   return { data: data, warnings: [], errors: [] };
 }
 ```
 
-### 📊 Ejemplos de Payload
+### 📊 Ejemplo de Payload
 
-| Configuración | Payload (hex) | Datos Decodificados |
-|---------------|---------------|-------------------|
-| **Solo batería** | `0DAC` | `{"battery_voltage": 3.85}` |
-| **DHT22** | `01F4 0FA0 0DAC` | `{"temperature": 25.00, "humidity": 65.20, "battery_voltage": 3.85}` |
-| **DHT22 + BMP280** | `01F4 0FA0 2328 0DAC` | `{"temperature": 25.00, "humidity": 65.20, "pressure": 1013.2, "battery_voltage": 3.85}` |
+| Payload (hex) | Datos Decodificados |
+|---------------|---------------------|
+| `55 E8 03 F4 01 10 27 D2 0C 88 13` | `{"battery_percent": 85, "ph": 7.00, "temperature_ext": 25.00, "temperature_water_1m": 100.00, "humidity": 32.10, "pressure": 1013.6}` |
+
+### 📝 Instalación en TTN
+
+1. Ve a TTN Console → Applications → [Tu aplicación]
+2. Navega a **Payload formatters** → **Uplink**
+3. Selecciona **Custom Javascript formatter**
+4. Pega el código del decoder
+5. Guarda los cambios
 
 ---
 
-## 🔋 Eficiencia Energética
+## 🔋 Gestión de Energía
 
-### ⚡ Consumo por Configuración (Batería 3000mAh)
+### ⚡ Sistema de Alimentación
 
-| Configuración | Intervalo | Consumo/ciclo | Autonomía | Payload |
-|---------------|-----------|---------------|-----------|---------|
-| **Solo batería** | 30 min | 0.015mAh | 136 días | 4 bytes |
-| **DHT22 básico** | 5 min | 0.03mAh | 70 días | 7 bytes |
-| **DHT22 + BMP280** | 10 min | 0.04mAh | 62 días | 9 bytes |
-| **Máx. sensores** | 10 min | 0.08mAh | 26 días | 9 bytes |
+La boya cuenta con un sistema de energía diseñado para operación autónoma:
 
-### 💡 Ciclo de Operación Típico
+- **Batería LiPo 3.7V**: Almacenamiento principal de energía
+- **Panel solar USB-C**: Carga automática durante el día
+- **PMU AXP2101**: Gestión inteligente de carga y batería
+- **Control de sensores**: MOSFET en GPIO13 para encendido/apagado selectivo
+
+### 💡 Optimización de Consumo
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌──────────────┐
-│   Deep Sleep    │ -> │ Procesamiento +  │ -> │   TX LoRa    │
-│   (20μA, 60s)   │    │   Sensores       │    │   (120mA)    │
-│                 │    │   (25mA, 8s)     │    │   (2s)       │
-└─────────────────┘    └──────────────────┘    └──────────────┘
-         │                        │                       │
-         └─ Consumo promedio: ────┴────── 0.5mAh/día ────┘
+┌─────────────────┐    ┌──────────────────────────┐    ┌──────────────┐
+│   Deep Sleep    │ -> │ Estabilización Sensores  │ -> │   TX LoRa    │
+│   (ESP32)       │    │   (30s para pH)          │    │   (120mA)    │
+└─────────────────┘    └──────────────────────────┘    └──────────────┘
 ```
 
-### ☀️ Optimizaciones con Carga Solar
+### 🔌 Control de Alimentación
 
-| Condiciones | Panel Solar | Consumo Neto | Autonomía |
-|-------------|-------------|--------------|-----------|
-| **Sin sol** | 0W | +0.5mAh/día | 70 días |
-| **Sol parcial** | 1W (4h/día) | -0.2mAh/día | Ilimitada |
-| **Sol completo** | 2W (8h/día) | -2.0mAh/día | Ilimitada |
+- **Sensores DS18B20 y pH**: Alimentación controlada por GPIO13 (MOSFET)
+- **Sensor BME280**: Alimentación permanente en I2C
+- **Tiempo de estabilización**: 30 segundos antes de lecturas (especialmente pH)
+- **Apagado automático**: Sensores se apagan después de cada lectura
 
-### 🔌 Estados de Energía
+### ☀️ Energía Solar
 
-- **🔋 Solo Batería**: Consumo continuo de batería
-- **☀️ Carga Solar**: Batería se carga cuando hay sol disponible
-- **🔋 + ☀️ Híbrido**: Batería + carga solar simultánea
-- **⚡ Energía Ilimitada**: Con panel solar adecuado
+El sistema está diseñado para carga solar continua:
+- **Entrada**: USB-C 5V desde panel solar
+- **Regulación**: PMU AXP2101 gestiona carga óptima
+- **Protección**: Sobrecarga, descarga profunda, cortocircuito
 
 ---
 
 ## 📁 Estructura del Proyecto
 
 ```
-low-power-project/
+boya-v2/
 ├── 📁 config/                    # ⚙️ Configuración del sistema
 │   ├── config.h                  # Configuración principal
 │   ├── hardware_config.h         # Configuración hardware
-│   ├── lorawan_config.h          # Credenciales LoRaWAN
+│   ├── lorawan_config.h          # Credenciales LoRaWAN (5 sensores)
 │   ├── lorawan_config_template.h # Plantilla configuración TTN
 │   └── sensor/                   # Configuraciones específicas de sensores
-│       ├── sensor_bmp280.h       # Config BMP280
-│       ├── sensor_dht11.h        # Config DHT11
-│       ├── sensor_dht22.h        # Config DHT22
-│       ├── sensor_ds18b20.h      # Config DS18B20
-│       ├── sensor_hcsr04.h       # Config HC-SR04
-│       ├── sensor_none.h         # Config sin sensores
-│       └── sensor_template.h     # Plantilla para nuevos sensores
+│       ├── sensor_bme280.h       # Config BME280 (I2C)
+│       ├── sensor_ds18b20.h      # Config DS18B20 (OneWire)
+│       └── sensor_ph.h           # Config DFRobot pH (ADC)
 ├── 📁 src/                       # 📄 Código fuente principal
 │   ├── main.ino                 # 🚀 Punto de entrada principal
-│   ├── LoRaBoards.cpp/.h         # 📡 Configuración hardware LoRa
+│   ├── LoRaBoards.cpp            # 📡 Configuración hardware LoRa
 │   ├── pgm_board.cpp             # 🔧 Gestión LoRaWAN y OTAA
-│   ├── sensor.cpp                # 🌡️ Lógica multisensor
+│   ├── sensor.cpp                # 🌡️ Coordinación de sensores
 │   ├── screen.cpp                # 🖥️ Gestión display OLED
-│   └── utilities.h               # 🛠️ Utilidades comunes
+│   ├── solar.cpp                 # ☀️ Gestión energía solar
+│   ├── ttn_decoder_generator.cpp # 📊 Generador decoder TTN
+│   └── sensor/                   # Implementaciones de sensores
+│       ├── sensor_bme280.cpp     # BME280 (Temp, humedad, presión)
+│       ├── sensor_ds18b20.cpp    # DS18B20 (Temp agua)
+│       └── sensor_ph.cpp         # DFRobot pH (pH agua)
 ├── 📁 include/                   # 📋 Headers y librerías
 │   ├── LoRaBoards.h              # Headers hardware LoRa
 │   ├── loramac.h                 # Headers LoRaWAN
-│   └── utilities.h               # Headers utilidades
+│   ├── screen.h                  # Headers pantalla
+│   ├── sensor_interface.h        # Interfaz común sensores
+│   ├── solar.h                   # Headers energía solar
+│   ├── ttn_decoder_generator.h   # Headers generador decoder
+│   └── utilities.h               # Utilidades comunes
+├── 📁 lib/                       # 📚 Librerías incluidas
+│   ├── Adafruit_BME280_Library/  # Librería BME280
+│   ├── Adafruit_BusIO/           # Bus I2C/SPI
+│   ├── Adafruit_Sensor/          # Sensor unificado
+│   ├── LMIC-Arduino/             # Stack LoRaWAN
+│   ├── U8g2/                     # Display OLED
+│   └── XPowersLib/               # Gestión PMU AXP2101
 ├── 📁 docs/                      # 📚 Documentación completa
 │   ├── 1_guiadeinicio.md         # 🚀 Guía de inicio rápido
 │   ├── 2_responsabilidad.md      # ⚖️ Responsabilidades del proyecto
@@ -259,18 +310,20 @@ low-power-project/
 ### 📦 Dependencias PlatformIO
 
 ```ini
-[env:esp32dev]
-platform = espressif32
+[env:T3_V1_6_SX1276]
+platform = espressif32 @ 6.9.0
 board = esp32dev
 framework = arduino
 lib_deps =
-    DHT sensor library for ESPx
-    Adafruit BMP280 Library
-    DallasTemperature
-    OneWire
-    U8g2
-    MCCI LoRaWAN LMIC library
-    XPowersLib
+    adafruit/Adafruit BME280 Library@^2.2.2
+    adafruit/Adafruit BusIO@^1.16.1
+    adafruit/Adafruit Unified Sensor@^1.1.14
+    milesburton/DallasTemperature@^3.9.0
+    paulstoffregen/OneWire@^2.3.7
+    https://github.com/DFRobot/DFRobot_PH.git
+    olikraus/U8g2@^2.34.17
+    mcci-catena/MCCI LoRaWAN LMIC library@^4.1.1
+    lewisxhe/XPowersLib@^0.2.6
 ```
 
 ### 🧪 Testing y Debug
@@ -280,46 +333,55 @@ lib_deps =
 pio run
 
 # Subir a la placa
-pio run --target upload --upload-port COM3
+pio run --target upload
 
-# Monitor serial
+# Monitor serial (115200 baud)
 pio device monitor
 
 # Limpiar y reconstruir
 pio run --target clean && pio run
 ```
 
-### 🔍 Debug Avanzado
+### 🔧 Calibración del Sensor de pH
 
-```cpp
-// En config/config.h
-#define ENABLE_SERIAL_LOGS true
-#define LOG_LEVEL 2              // 0: ninguno, 1: básico, 2: detallado
-#define SHOW_TTN_DECODER true    // Genera decoder TTN automáticamente
-```
+El sensor DFRobot pH requiere calibración inicial:
+
+1. **Modo calibración**: Envía comandos por Serial Monitor
+   ```
+   ENTERPH  // Entrar en modo calibración
+   CALPH    // Calibrar con solución buffer (pH 4.0 o 7.0)
+   EXITPH   // Salir y guardar calibración
+   ```
+
+2. **Proceso recomendado**:
+   - Calibrar primero con solución pH 7.0 (neutro)
+   - Luego calibrar con solución pH 4.0 (ácido)
+   - La calibración se guarda en EEPROM automáticamente
 
 ---
 
 ## 📈 Dashboard TTN
 
-### Visualización de Datos
+### Visualización de Datos de Boya Marítima
 ```
-🌡️ Temperatura: 23.45°C
-💧 Humedad: 65.30%
-🌪️ Presión: 1013.25 hPa
-🔋 Batería: 3.85V (85%)
-☀️ Solar: Cargando
+🔋 Batería: 85%
+🧪 pH: 7.28
+🌡️ Temperatura Exterior: 18.5°C
+🌊 Temperatura Agua (1m): 16.3°C
+💧 Humedad: 72.5%
+🌪️ Presión: 1015.2 hPa
 📡 RSSI: -95dBm, SNR: 8.5dB
 ```
 
 ### JSON Decodificado
 ```json
 {
-  "temperature": 23.45,
-  "humidity": 65.30,
-  "pressure": 1013.25,
-  "battery_voltage": 3.85,
-  "solar_charging": true
+  "battery_percent": 85,
+  "ph": 7.28,
+  "temperature_ext": 18.5,
+  "temperature_water_1m": 16.3,
+  "humidity": 72.5,
+  "pressure": 1015.2
 }
 ```
 
@@ -336,19 +398,45 @@ Este proyecto es perfecto para aprender:
 - **Energía**: Gestión de consumo y carga solar
 
 ### 🚀 **Agregar Nuevo Sensor**
-```cpp
-// 1. Define en config.h
-#define ENABLE_SENSOR_MI_SENSOR
 
-// 2. Implementa sensor_mi_sensor.cpp
-bool sensor_mi_sensor_read_all(sensor_data_t* data) {
-    data->mi_variable = leer_sensor();
-    data->battery = readBatteryVoltage();
-    return true;
-}
+El sistema sigue una arquitectura modular. Para añadir un nuevo sensor:
 
-// 3. ¡Listo! El sistema lo detecta automáticamente
-```
+1. **Crear archivo de configuración**: `config/sensor/sensor_nuevo.h`
+   ```cpp
+   #ifndef SENSOR_NUEVO_H
+   #define SENSOR_NUEVO_H
+   
+   #define NUEVO_PIN 26
+   #define NUEVO_POWER_PIN 13  // MOSFET compartido
+   
+   #endif
+   ```
+
+2. **Implementar funciones**: `src/sensor/sensor_nuevo.cpp`
+   ```cpp
+   void sensor_nuevo_init() {
+       // Inicialización del sensor
+   }
+   
+   bool sensor_nuevo_read_all(sensor_data_t* data) {
+       // Lectura del sensor
+       data->nuevo_valor = leer_sensor();
+       return true;
+   }
+   ```
+
+3. **Habilitar en config.h**:
+   ```cpp
+   #define ENABLE_SENSOR_NUEVO
+   ```
+
+4. **Actualizar estructura de datos** en `config/config.h`:
+   ```cpp
+   typedef struct {
+       // ... campos existentes
+       float nuevo_valor;
+   } sensor_data_t;
+   ```
 
 ---
 
@@ -382,33 +470,46 @@ bool sensor_mi_sensor_read_all(sensor_data_t* data) {
 |------------|----------------|-------|
 | **Placa principal** | LilyGo T3 v1.6.1 | ESP32 + LoRa SX1276 + PMU AXP2101 |
 | **Antena** | 868MHz LoRaWAN | Incluida con la placa |
-| **Batería** | LiPo 3.7V 3000mAh | Recomendado para máxima autonomía |
-| **Panel solar** | 5V USB-C | Opcional, carga automática |
-| **Sensores** | Según configuración | DHT22, BMP280, DS18B20, HC-SR04 |
+| **Batería** | LiPo 3.7V | Para operación autónoma |
+| **Panel solar** | 5V USB-C | Recomendado para despliegue permanente |
+| **Sensor BME280** | I2C | Temperatura, humedad, presión atmosférica |
+| **Sensor DS18B20** | OneWire waterproof | Temperatura del agua sumergible |
+| **Sensor pH DFRobot** | Analógico | Medición de pH del agua |
+| **Soluciones buffer** | pH 4.0 y pH 7.0 | Para calibración del sensor de pH |
 
-### 🔌 Conexiones de Sensores
+### 🔌 Conexiones de Sensores de la Boya
 
 | Sensor | Pines ESP32 | Alimentación | Notas |
 |--------|-------------|--------------|-------|
-| **DHT22** | GPIO 13 (DATA), GPIO 12 (POWER) | 3.3V | Control individual de alimentación |
-| **BMP280** | I2C: GPIO 17 (SDA), 18 (SCL) | 3.3V | Dirección I2C: 0x76 o 0x77 |
-| **DS18B20** | GPIO 14 (OneWire) | 3.3V | Requiere resistor pull-up 4.7KΩ |
-| **HC-SR04** | GPIO 25 (TRIG), 26 (ECHO) | 5V | Desde PMU AXP2101 |
+| **BME280** | I2C: GPIO 17 (SDA), 18 (SCL) | 3.3V | Dirección I2C: 0x76 o 0x77 |
+| **DS18B20** | GPIO 15 (OneWire) | 3.3V (vía GPIO13) | Sensor waterproof sumergible |
+| **pH DFRobot** | GPIO 25 (ADC) | 3.3V (vía GPIO13) | Requiere calibración inicial |
+| **Control de alimentación** | GPIO 13 (MOSFET) | - | Controla DS18B20 y pH |
 | **OLED SSD1306** | I2C: GPIO 17 (SDA), 18 (SCL) | 3.3V | Dirección I2C: 0x3C |
 
-### ⚡ Diagrama de Conexiones
+### ⚡ Diagrama de Conexiones de la Boya
 
 ```
-ESP32 LilyGo T3 v1.6.1
+ESP32 LilyGo T3 v1.6.1 (Boya Marítima)
 ├── 🔌 USB-C (Programación + Carga Solar)
-├── 📡 Antena LoRa 868MHz
-├── 🔋 Batería LiPo 3.7V
-├── 🌡️ DHT22 (GPIO 13/12)
-├── 🌪️ BMP280 (I2C GPIO 17/18)
-├── 🌡️ DS18B20 (GPIO 14)
-├── 📏 HC-SR04 (GPIO 25/26)
-└── 🖥️ OLED (I2C GPIO 17/18)
+├── 📡 Antena LoRa 868MHz (Comunicación TTN)
+├── 🔋 Batería LiPo 3.7V (Almacenamiento energía)
+├── ☀️ Panel Solar 5V (Carga continua)
+├── 🌡️ BME280 (I2C GPIO 17/18) → Temp exterior, humedad, presión
+├── 🌊 DS18B20 (GPIO 15) → Temperatura agua 1m
+├── 🧪 pH DFRobot (GPIO 25) → pH del agua
+├── ⚡ MOSFET (GPIO 13) → Control alimentación sensores
+└── 🖥️ OLED (I2C GPIO 17/18) → Display estado
 ```
+
+### 🌊 Consideraciones para Despliegue Marítimo
+
+- **Encapsulado impermeable**: Protección IP67 o superior para la electrónica
+- **Sensor DS18B20**: Usar versión waterproof con cable resistente
+- **Sensor pH**: Proteger sonda con capuchón cuando no esté en uso
+- **Antena**: Posicionar verticalmente para mejor cobertura
+- **Panel solar**: Orientación óptima hacia el sur (hemisferio norte)
+- **Flotabilidad**: Diseño de boya debe mantener sensores sumergidos y electrónica seca
 
 ---
 
@@ -418,12 +519,12 @@ ESP32 LilyGo T3 v1.6.1
 
 ---
 
-**¡Bienvenido al mundo del IoT con LoRaWAN!** 🌟
+**¡Bienvenido al monitoreo marítimo con IoT y LoRaWAN!** 🌊
 
 *[Empieza aquí](docs/6_uso.md)* | *[Arquitectura técnica](docs/4_arquitectura.md)* | *[Solución de problemas](docs/9_troubleshooting.md)*
 
 ---
-**📅 Actualizado: Noviembre 2025** | **🔧 LilyGo T3 v1.6.1** | **📡 LoRaWAN EU868**
+**📅 Actualizado: Diciembre 2025** | **🔧 LilyGo T3 v1.6.1** | **📡 LoRaWAN EU868** | **🌊 Boya Marítima V2**
 
 # LILYGO LoRa T3 Low Power PINOUT
 

@@ -99,7 +99,7 @@ bool sensor_bme280_read_all(sensor_data_t* data) {
     data->temperature = bme.readTemperature();
     data->humidity = bme.readHumidity();  // BME280 sí mide humedad
     data->pressure = bme.readPressure() / 100.0F;  // Convertir a hPa
-    data->battery = readBatteryVoltage();
+    // Batería se lee en sensors_read_all(), no aquí
     data->valid = true;
 
     if (isnan(data->temperature) || isnan(data->pressure) || isnan(data->humidity)) {

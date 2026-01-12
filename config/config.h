@@ -86,7 +86,7 @@
 // CONFIGURACIÓN DE TIMING Y ENERGÍA
 // =============================================================================
 
-#define SEND_INTERVAL_SECONDS 300    // Intervalo entre envíos (mínimo 60s para evitar sobrecarga)
+#define SEND_INTERVAL_SECONDS 900    // Intervalo entre envíos (15 minutos)
 #define WATCHDOG_TIMEOUT_MINUTES 5   // Timeout del watchdog en minutos
 
 // Energía y batería
@@ -163,7 +163,7 @@
 
 // Tamaño de batería según configuración
 #ifdef BATTERY_AS_PERCENTAGE
-#define PAYLOAD_SIZE_BATTERY 2  // 2 bytes para mantener formato
+#define PAYLOAD_SIZE_BATTERY 1  // 1 byte para porcentaje (0-100%)
 #else
 #define PAYLOAD_SIZE_BATTERY 2  // 2 bytes para voltaje (* 100)
 #endif

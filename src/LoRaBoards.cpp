@@ -918,7 +918,8 @@ void setupBoards(bool disable_u8g2 )
     scanDevices(&Wire);
 #endif
 
-    beginSDCard();
+    // SD Card disabled for buoy deployment (no SD card slot used)
+    // beginSDCard();
 
 #ifdef HAS_DISPLAY
     beginDisplay();

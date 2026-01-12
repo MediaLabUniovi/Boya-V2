@@ -201,7 +201,7 @@ void do_send(osjob_t *j)
     Serial.println(F("Preparando datos del sensor para envío..."));
 
     // ==================== OBTENER PAYLOAD COMPLETO ====================
-    uint8_t payload[8];  // Buffer para el payload
+    uint8_t payload[PAYLOAD_SIZE_BYTES];  // Buffer para el payload (12 bytes para Boya V2)
     payload_config_t payload_config = {
         .buffer = payload,
         .max_size = sizeof(payload),

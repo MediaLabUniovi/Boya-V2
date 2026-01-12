@@ -121,14 +121,17 @@ bool sensors_read_all(sensor_data_t* data) {
         if (sensor_bme280_read_all(&bme_data)) {
             if (bme_data.temperature != SENSOR_ERROR_TEMPERATURE) {
                 data->temperature = bme_data.temperature;
+                Serial.printf("DEBUG: BME280 Temperatura exterior = %.2f °C\n", data->temperature);
                 any_data = true;
             }
             if (bme_data.humidity != SENSOR_ERROR_HUMIDITY) {
                 data->humidity = bme_data.humidity;
+                Serial.printf("DEBUG: BME280 Humedad = %.2f %%\n", data->humidity);
                 any_data = true;
             }
             if (bme_data.pressure != SENSOR_ERROR_PRESSURE) {
                 data->pressure = bme_data.pressure;
+                Serial.printf("DEBUG: BME280 Presion = %.2f hPa\n", data->pressure);
                 any_data = true;
             }
         }
@@ -142,6 +145,7 @@ bool sensors_read_all(sensor_data_t* data) {
         if (sensor_ds18b20_read_all(&ds18b20_data)) {
             if (ds18b20_data.temperature_1m != SENSOR_ERROR_TEMPERATURE) {
                 data->temperature_1m = ds18b20_data.temperature_1m;
+                Serial.printf("DEBUG: DS18B20 Temperatura agua 1m = %.2f °C\n", data->temperature_1m);
                 any_data = true;
             }
         }
@@ -155,6 +159,7 @@ bool sensors_read_all(sensor_data_t* data) {
         #ifdef ENABLE_SENSOR_BME280
         if (data->temperature != SENSOR_ERROR_TEMPERATURE) {
             sensor_ph_set_temperature(data->temperature);
+            Serial.printf("DEBUG: pH compensado con temperatura = %.2f °C\n", data->temperature);
         }
         #endif
         
@@ -162,11 +167,28 @@ bool sensors_read_all(sensor_data_t* data) {
         if (sensor_ph_read_all(&ph_data)) {
             if (ph_data.ph != SENSOR_ERROR_PH) {
                 data->ph = ph_data.ph;
+                Serial.printf("DEBUG: pH sensor = %.2f\n", data->ph);
                 any_data = true;
             }
         }
     }
 #endif
+
+    // Mostrar resumen final
+    Serial.println("DEBUG: ========== RESUMEN DE LECTURAS ==========");
+    Serial.printf("DEBUG: Bateria = %.2f V (%.0f%%)\n", data->battery, 
+                  (data->battery - 3.3) / (4.2 - 3.3) * 100.0);
+    if (data->ph != SENSOR_ERROR_PH) 
+        Serial.printf("DEBUG: pH = %.2f\n", data->ph);
+    if (data->temperature != SENSOR_ERROR_TEMPERATURE) 
+        Serial.printf("DEBUG: Temp exterior = %.2f °C\n", data->temperature);
+    if (data->temperature_1m != SENSOR_ERROR_TEMPERATURE) 
+        Serial.printf("DEBUG: Temp agua 1m = %.2f °C\n", data->temperature_1m);
+    if (data->humidity != SENSOR_ERROR_HUMIDITY) 
+        Serial.printf("DEBUG: Humedad = %.2f %%\n", data->humidity);
+    if (data->pressure != SENSOR_ERROR_PRESSURE) 
+        Serial.printf("DEBUG: Presion = %.2f hPa\n", data->pressure);
+    Serial.println("DEBUG: ==========================================");
 
     data->valid = any_data;
     return any_data;
@@ -198,13 +220,12 @@ uint8_t sensors_get_payload(payload_config_t* config) {
 
     // Orden del payload: Bateria, pH, Temperatura exterior, Temperatura 1m, Humedad, Presion
     
-    // 1. Bateria (2 bytes) - PRIMERO
+    // 1. Bateria (1 byte) - PRIMERO
 #ifdef BATTERY_AS_PERCENTAGE
-    // Enviar como porcentaje (2 bytes para mantener formato)
+    // Enviar como porcentaje (1 byte)
     uint8_t batt_percent = batteryPercentFromVoltage(data.battery);
     Serial.printf("DEBUG: Battery voltage %.2f V = %u%%\n", data.battery, batt_percent);
-    config->buffer[offset++] = batt_percent & 0xFF;       // Low byte
-    config->buffer[offset++] = 0x00;                       // High byte (siempre 0 para porcentaje)
+    config->buffer[offset++] = batt_percent;              // Solo 1 byte
 #else
     // Enviar como voltaje (2 bytes)
     uint16_t batt_int = (uint16_t)(data.battery * 100);
@@ -217,6 +238,8 @@ uint8_t sensors_get_payload(payload_config_t* config) {
 #ifdef ENABLE_SENSOR_PH
     if (SYSTEM_HAS_PH) {
         uint16_t ph_int = (uint16_t)(data.ph * 100);
+        Serial.printf("DEBUG PAYLOAD: pH %.2f → %u (0x%04X) → bytes[%u,%u]\n", 
+                     data.ph, ph_int, ph_int, ph_int & 0xFF, ph_int >> 8);
         config->buffer[offset++] = ph_int & 0xFF;        // Low byte primero
         config->buffer[offset++] = ph_int >> 8;           // High byte despues
     }
@@ -226,8 +249,10 @@ uint8_t sensors_get_payload(payload_config_t* config) {
 #ifdef ENABLE_SENSOR_BME280
     if (SYSTEM_HAS_TEMPERATURE) {
         int16_t temp_int = (int16_t)(data.temperature * 100);
+        Serial.printf("DEBUG PAYLOAD: Temp_ext %.2f → %d (0x%04X) → bytes[%u,%u]\n", 
+                     data.temperature, temp_int, (uint16_t)temp_int, temp_int & 0xFF, (temp_int >> 8) & 0xFF);
         config->buffer[offset++] = temp_int & 0xFF;      // Low byte primero
-        config->buffer[offset++] = temp_int >> 8;         // High byte despues
+        config->buffer[offset++] = (temp_int >> 8) & 0xFF; // High byte despues
     }
 #endif
 
@@ -235,8 +260,10 @@ uint8_t sensors_get_payload(payload_config_t* config) {
 #ifdef ENABLE_SENSOR_DS18B20
     if (SYSTEM_HAS_TEMP_1M) {
         int16_t temp1m_int = (int16_t)(data.temperature_1m * 100);
+        Serial.printf("DEBUG PAYLOAD: Temp_1m %.2f → %d (0x%04X) → bytes[%u,%u]\n", 
+                     data.temperature_1m, temp1m_int, (uint16_t)temp1m_int, temp1m_int & 0xFF, (temp1m_int >> 8) & 0xFF);
         config->buffer[offset++] = temp1m_int & 0xFF;     // Low byte primero
-        config->buffer[offset++] = temp1m_int >> 8;       // High byte despues
+        config->buffer[offset++] = (temp1m_int >> 8) & 0xFF; // High byte despues
     }
 #endif
 
@@ -244,8 +271,10 @@ uint8_t sensors_get_payload(payload_config_t* config) {
 #ifdef ENABLE_SENSOR_BME280
     if (SYSTEM_HAS_HUMIDITY) {
         int16_t hum_int = (int16_t)(data.humidity * 100);
+        Serial.printf("DEBUG PAYLOAD: Humedad %.2f → %d (0x%04X) → bytes[%u,%u]\n", 
+                     data.humidity, hum_int, (uint16_t)hum_int, hum_int & 0xFF, (hum_int >> 8) & 0xFF);
         config->buffer[offset++] = hum_int & 0xFF;        // Low byte primero
-        config->buffer[offset++] = hum_int >> 8;          // High byte despues
+        config->buffer[offset++] = (hum_int >> 8) & 0xFF; // High byte despues
     }
 #endif
 
@@ -253,6 +282,8 @@ uint8_t sensors_get_payload(payload_config_t* config) {
 #ifdef ENABLE_SENSOR_BME280
     if (SYSTEM_HAS_PRESSURE) {
         uint16_t pres_int = (uint16_t)(data.pressure * 10);
+        Serial.printf("DEBUG PAYLOAD: Presion %.2f → %u (0x%04X) → bytes[%u,%u]\n", 
+                     data.pressure, pres_int, pres_int, pres_int & 0xFF, pres_int >> 8);
         config->buffer[offset++] = pres_int & 0xFF;       // Low byte primero
         config->buffer[offset++] = pres_int >> 8;         // High byte despues
     }

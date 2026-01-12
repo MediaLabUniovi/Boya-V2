@@ -19,6 +19,7 @@ static bool sensor_powered = false;
  * @brief Enciende alimentación de sensores
  */
 static void sensor_ds18b20_power_on(void) {
+#if DS18B20_USE_POWER_CONTROL
     if (sensor_powered) return;
     
     pinMode(DS18B20_POWER_PIN, OUTPUT);
@@ -28,12 +29,18 @@ static void sensor_ds18b20_power_on(void) {
     Serial.println("DS18B20: Alimentación de sensores activada");
     Serial.printf("DS18B20: Esperando %d ms para estabilización...\n", DS18B20_POWER_ON_DELAY_MS);
     delay(DS18B20_POWER_ON_DELAY_MS);
+#else
+    Serial.println("DS18B20: Alimentación permanente (sin control por MOSFET)");
+    sensor_powered = true;
+    delay(100);  // Pequeño delay para estabilización
+#endif
 }
 
 /**
  * @brief Apaga alimentación de sensores
  */
 static void sensor_ds18b20_power_off(void) {
+#if DS18B20_USE_POWER_CONTROL
     if (!sensor_powered) return;
     
     digitalWrite(DS18B20_POWER_PIN, LOW);
@@ -41,6 +48,10 @@ static void sensor_ds18b20_power_off(void) {
     
     Serial.println("DS18B20: Alimentación de sensores desactivada");
     delay(1000);  // Delay para garantizar desconexión completa
+#else
+    // No hacer nada si la alimentación es permanente
+    Serial.println("DS18B20: Alimentación permanente (no se apaga)");
+#endif
 }
 
 /**
@@ -48,20 +59,28 @@ static void sensor_ds18b20_power_off(void) {
  */
 bool sensor_ds18b20_init(void) {
     Serial.println("DS18B20: Iniciando sensor de temperatura a 1m...");
+    Serial.printf("DS18B20: Pin de datos configurado en GPIO%d\n", DS18B20_DATA_PIN);
+    Serial.printf("DS18B20: Pin de alimentacion configurado en GPIO%d\n", DS18B20_POWER_PIN);
+    
+    // Configurar pin de datos como entrada con pull-up
+    pinMode(DS18B20_DATA_PIN, INPUT_PULLUP);
+    Serial.println("DS18B20: Pull-up activado en pin de datos");
     
     // Encender alimentación de sensores
     sensor_ds18b20_power_on();
     
     // Inicializar librería DallasTemperature
     sensors.begin();
+    Serial.println("DS18B20: Libreria DallasTemperature inicializada");
     
     // Verificar si hay dispositivos conectados
     int deviceCount = sensors.getDeviceCount();
     Serial.printf("DS18B20: %d dispositivo(s) encontrado(s) en el bus OneWire\n", deviceCount);
     
     if (deviceCount == 0) {
-        Serial.println("DS18B20: ERROR - No se encontró ningún sensor");
-        Serial.println("Verifica conexiones: VCC->MOSFET, GND->GND, DATA->GPIO" + String(DS18B20_DATA_PIN));
+        Serial.println("DS18B20: ERROR - No se encontro ningun sensor");
+        Serial.printf("DS18B20: Verifica conexiones: VCC->GPIO%d(MOSFET), GND->GND, DATA->GPIO%d con resistor 4.7K a VCC\n", 
+                     DS18B20_POWER_PIN, DS18B20_DATA_PIN);
         sensor_available = false;
         sensor_ds18b20_power_off();
         return false;
@@ -69,6 +88,7 @@ bool sensor_ds18b20_init(void) {
     
     // Configurar resolución
     sensors.setResolution(DS18B20_RESOLUTION);
+    Serial.printf("DS18B20: Resolucion configurada a %d bits\n", DS18B20_RESOLUTION);
     
     Serial.println("DS18B20: Sensor inicializado correctamente");
     sensor_available = true;

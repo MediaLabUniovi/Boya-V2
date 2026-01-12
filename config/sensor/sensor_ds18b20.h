@@ -9,8 +9,11 @@
 
 // Configuración hardware
 #define DS18B20_DATA_PIN 15  // Pin para OneWire (ajustar según hardware)
+
+// Control de alimentación
+#define DS18B20_USE_POWER_CONTROL false  // true: usa MOSFET, false: alimentación permanente
 #ifndef DS18B20_POWER_PIN
-#define DS18B20_POWER_PIN 13  // Pin para controlar alimentación de sensores
+#define DS18B20_POWER_PIN 13  // Pin para controlar alimentación de sensores (si USE_POWER_CONTROL = true)
 #endif
 #define DS18B20_POWER_ON_DELAY_MS 30000  // 30 segundos para estabilización de sensores
 

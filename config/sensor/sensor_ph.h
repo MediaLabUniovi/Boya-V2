@@ -9,10 +9,13 @@
 
 // Configuración hardware
 #define PH_ANALOG_PIN 25  // Pin ADC para sensor de pH DFRobot (GPIO25)
+
+// Control de alimentación
+#define PH_USE_POWER_CONTROL false  // true: usa MOSFET, false: alimentación permanente
 #ifndef PH_POWER_PIN
-#define PH_POWER_PIN 13   // Pin para controlar alimentación de sensores
+#define PH_POWER_PIN 13   // Pin para controlar alimentación de sensores (si USE_POWER_CONTROL = true)
 #endif
-#define PH_POWER_ON_DELAY_MS 30000  // 30 segundos para estabilización
+#define PH_POWER_ON_DELAY_MS 30000  // 30 segundos para estabilización (si USE_POWER_CONTROL = true)
 
 // Configuración del sensor DFRobot
 #define PH_REFERENCE_VOLTAGE 3.3f             // Voltaje de referencia ADC (3.3V para ESP32)

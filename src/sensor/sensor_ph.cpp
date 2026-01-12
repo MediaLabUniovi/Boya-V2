@@ -3,6 +3,7 @@
 #ifdef ENABLE_SENSOR_PH
 // Implementacion sensor de pH DFRobot
 #include <DFRobot_PH.h>
+#include <EEPROM.h>
 #include "sensor_interface.h"
 #include "LoRaBoards.h"
 
@@ -20,6 +21,7 @@ static float temperature = PH_DEFAULT_TEMPERATURE;  // Temperatura para compensa
  * @brief Enciende alimentacion de sensores
  */
 static void sensor_ph_power_on(void) {
+#if PH_USE_POWER_CONTROL
     if (sensor_powered) return;
     
     pinMode(PH_POWER_PIN, OUTPUT);
@@ -29,12 +31,18 @@ static void sensor_ph_power_on(void) {
     Serial.println("pH: Alimentacion de sensores activada");
     Serial.printf("pH: Esperando %d ms para estabilizacion...\n", PH_POWER_ON_DELAY_MS);
     delay(PH_POWER_ON_DELAY_MS);
+#else
+    Serial.println("pH: Alimentacion permanente (sin control por MOSFET)");
+    sensor_powered = true;
+    delay(100);  // Pequeño delay para estabilización
+#endif
 }
 
 /**
  * @brief Apaga alimentacion de sensores
  */
 static void sensor_ph_power_off(void) {
+#if PH_USE_POWER_CONTROL
     if (!sensor_powered) return;
     
     digitalWrite(PH_POWER_PIN, LOW);
@@ -42,6 +50,10 @@ static void sensor_ph_power_off(void) {
     
     Serial.println("pH: Alimentacion de sensores desactivada");
     delay(1000);  // Delay para garantizar desconexion completa
+#else
+    // No hacer nada si la alimentación es permanente
+    Serial.println("pH: Alimentacion permanente (no se apaga)");
+#endif
 }
 
 /**
@@ -55,6 +67,10 @@ bool sensor_ph_init(void) {
     
     // Configurar pin de alimentacion
     pinMode(PH_POWER_PIN, OUTPUT);
+    
+    // Inicializar EEPROM para cargar datos de calibración
+    EEPROM.begin(32);
+    Serial.println("pH: EEPROM inicializada (32 bytes)");
     
     // Inicializar la libreria DFRobot_PH
     ph_sensor.begin();
@@ -133,13 +149,17 @@ bool sensor_ph_read_all(sensor_data_t* data) {
     float ph = read_ph_value();
     
     // Verificar si la lectura es valida
-    if (ph < PH_MIN || ph > PH_MAX) {
+    if (isnan(ph)) {
+        Serial.println("pH: ERROR - Sensor no calibrado, devuelve NaN");
+        Serial.println("pH: Usa comandos ENTERPH, CALPH (pH 7.0), CALPH (pH 4.0), EXITPH para calibrar");
+        data->ph = SENSOR_ERROR_PH;  // Enviar valor de error
+    } else if (ph < PH_MIN || ph > PH_MAX) {
         Serial.printf("pH: ADVERTENCIA - Lectura fuera de rango: %.2f\n", ph);
-        // No marcar como error, solo advertencia
+        data->ph = ph;  // Enviar el valor aunque esté fuera de rango
+    } else {
+        data->ph = ph;
+        Serial.printf("pH: Valor de pH = %.2f\n", ph);
     }
-    
-    data->ph = ph;
-    Serial.printf("pH: Valor de pH = %.2f\n", ph);
     
     // Apagar alimentacion despues de leer
     sensor_ph_power_off();
